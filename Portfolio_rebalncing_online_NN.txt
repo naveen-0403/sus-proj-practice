@@ -1,0 +1,238 @@
+"""upon the user requested stocks we create a portfolio and use portfolio rebalancing to give the client a buy or sell or ignore the stock signal"""
+
+import numpy as np
+import tensorflow as tf
+
+# Define the parsimonious neural network model
+def build_model(input_dim, output_dim):
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(32, activation='relu', input_shape=(input_dim,)),
+        tf.keras.layers.Dense(output_dim, activation='linear')
+    ])
+    return model
+
+# Define the portfolio optimization problem
+def portfolio_optimization(inputs):
+    # Define your objective function and constraints
+    # You can use any suitable optimization formulation
+    
+    # For example, minimize the risk (variance) subject to a target return
+    expected_returns = np.mean(inputs, axis=0)
+    cov_matrix = np.cov(inputs, rowvar=False)
+    target_return = 0.1
+    
+    num_assets = inputs.shape[1]
+    
+    # Define objective function
+    def objective(weights):
+        variance = np.dot(np.dot(weights, cov_matrix), weights.T)
+        return variance
+    
+    # Define constraint function for target return
+    def constraint(weights):
+        return np.dot(weights, expected_returns) - target_return
+    
+    return objective, constraint, num_assets
+
+# Generate some random input data for demonstration
+input_data = np.random.rand(100, 10)  # 100 samples, 10 assets
+
+# Define the user-requested stocks and corresponding signals
+user_stocks = ["AAPL", "GOOGL", "MSFT", "AMZN"]
+user_signals = ["BUY", "SELL", "IGNORE", "BUY"]
+
+# Create a dictionary to map stocks to signals
+stock_signal_map = dict(zip(user_stocks, user_signals))
+
+# Filter the input data for the user-requested stocks
+selected_stocks_mask = np.isin(["AAPL", "GOOGL", "MSFT", "AMZN"], user_stocks)
+selected_input_data = input_data[:, selected_stocks_mask]
+
+# Define the portfolio optimization problem
+objective_fn, constraint_fn, num_assets = portfolio_optimization(selected_input_data)
+
+# Build the neural network model
+model = build_model(num_assets, num_assets)
+
+# Compile the model
+model.compile(optimizer='adam', loss='mean_squared_error')
+
+# Train the model
+model.fit(selected_input_data, np.zeros((selected_input_data.shape[0], num_assets)), epochs=100)
+
+# Extract the weights from the trained model
+weights = model.get_weights()[0]
+
+# Normalize the weights to get portfolio allocations
+portfolio_allocations = weights / np.sum(weights)
+
+# Rebalance the portfolio based on the calculated allocations
+rebalanced_portfolio = np.sum(input_data[0])  # Initial investment amount
+
+# Calculate the actual investment amounts based on portfolio allocations
+investment_amounts = rebalanced_portfolio * portfolio_allocations
+
+# Generate buy/sell/ignore signals for the user-requested stocks
+stock_signals = {}
+for stock, allocation in zip(user_stocks, portfolio_allocations):
+    if stock_signal_map[stock] == "BUY":
+        if allocation > 0:
+            stock_signals[stock] = "Buy more"
+        else:
+            stock_signals[stock] = "Buy"
+    elif stock_signal_map[stock] == "SELL":
+        if allocation > 0:
+            stock_signals[stock] = "Sell"
+        else:
+            stock_signals[stock] = "No action"
+    elif stock_signal_map[stock] == "IGNORE":
+        stock_signals[stock] = "No action"
+
+print("Investment amounts after rebalancing:")
+print(investment_amounts)
+print("Stock signals:")
+print(stock_signals)
+
+
+
+
+
+
+
+
+
+can you use this code to rebalance a user defined portfolio
+
+import numpy as np
+import tensorflow as tf
+
+# Define the parsimonious neural network model
+def build_model(input_dim, output_dim):
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(32, activation='relu', input_shape=(input_dim,)),
+        tf.keras.layers.Dense(output_dim, activation='linear')
+    ])
+    return model
+
+# Define the portfolio optimization problem
+def portfolio_optimization(inputs):
+    # Define your objective function and constraints
+    # You can use any suitable optimization formulation
+    
+    # For example, minimize the risk (variance) subject to a target return
+    expected_returns = np.mean(inputs, axis=0)
+    cov_matrix = np.cov(inputs, rowvar=False)
+    target_return = 0.1
+    
+    num_assets = inputs.shape[1]
+    
+    # Define objective function
+    def objective(weights):
+        variance = np.dot(np.dot(weights, cov_matrix), weights.T)
+        return variance
+    
+    # Define constraint function for target return
+    def constraint(weights):
+        return np.dot(weights, expected_returns) - target_return
+    
+    return objective, constraint, num_assets
+
+# Generate some random input data for demonstration
+input_data = np.random.rand(100, 10)  # 100 samples, 10 assets
+
+# Define the user-defined portfolio
+user_portfolio = np.array([0.2, 0.3, 0.1, 0.1, 0.1, 0.1, 0.05, 0.025, 0.025, 0.025])
+
+# Define the portfolio optimization problem
+objective_fn, constraint_fn, num_assets = portfolio_optimization(input_data)
+
+# Build the neural network model
+model = build_model(num_assets, num_assets)
+
+# Compile the model
+model.compile(optimizer='adam', loss='mean_squared_error')
+
+# Train the model
+model.fit(input_data, np.zeros((input_data.shape[0], num_assets)), epochs=100)
+
+# Extract the weights from the trained model
+weights = model.get_weights()[0]
+
+# Normalize the weights to get portfolio allocations
+portfolio_allocations = weights / np.sum(weights)
+
+# Rebalance the portfolio based on the user-defined portfolio
+rebalanced_portfolio = user_portfolio * np.sum(input_data[0])  # Initial investment amount
+
+# Calculate the actual investment amounts based on portfolio allocations
+investment_amounts = rebalanced_portfolio * portfolio_allocations
+
+print("Investment amounts after rebalancing:")
+print(investment_amounts)
+
+
+
+
+
+
+
+
+can you write the code for "A parsimonious neural network approach to solve portfolio optimization problems without using dynamic programming"
+
+import numpy as np
+import tensorflow as tf
+
+# Define the parsimonious neural network model
+def build_model(input_dim, output_dim):
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(32, activation='relu', input_shape=(input_dim,)),
+        tf.keras.layers.Dense(output_dim, activation='linear')
+    ])
+    return model
+
+# Define the portfolio optimization problem
+def portfolio_optimization(inputs):
+    # Define your objective function and constraints
+    # You can use any suitable optimization formulation
+    
+    # For example, minimize the risk (variance) subject to a target return
+    expected_returns = np.mean(inputs, axis=0)
+    cov_matrix = np.cov(inputs, rowvar=False)
+    target_return = 0.1
+    
+    num_assets = inputs.shape[1]
+    
+    # Define objective function
+    def objective(weights):
+        variance = np.dot(np.dot(weights, cov_matrix), weights.T)
+        return variance
+    
+    # Define constraint function for target return
+    def constraint(weights):
+        return np.dot(weights, expected_returns) - target_return
+    
+    return objective, constraint, num_assets
+
+# Generate some random input data for demonstration
+input_data = np.random.rand(100, 10)  # 100 samples, 10 assets
+
+# Define the portfolio optimization problem
+objective_fn, constraint_fn, num_assets = portfolio_optimization(input_data)
+
+# Build the neural network model
+model = build_model(num_assets, num_assets)
+
+# Compile the model
+model.compile(optimizer='adam', loss='mean_squared_error')
+
+# Train the model
+model.fit(input_data, np.zeros((input_data.shape[0], num_assets)), epochs=100)
+
+# Extract the weights from the trained model
+weights = model.get_weights()[0]
+
+# Normalize the weights to get portfolio allocations
+portfolio_allocations = weights / np.sum(weights)
+
+print("Portfolio allocations:")
+print(portfolio_allocations)
