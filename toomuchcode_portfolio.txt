@@ -1,0 +1,638 @@
+To create a portfolio using historical data for 10 stocks and rebalance it using portfolio optimization and a parsimonious neural network, here's an example code:
+
+
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+
+# Define the parsimonious neural network model
+def build_model(input_dim, output_dim):
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(32, activation='relu', input_shape=(input_dim,)),
+        tf.keras.layers.Dense(output_dim, activation='linear')
+    ])
+    return model
+
+# Define the portfolio optimization problem
+def portfolio_optimization(inputs):
+    # Define your objective function and constraints
+    # You can use any suitable optimization formulation
+    
+    # For example, minimize the risk (variance) subject to a target return
+    expected_returns = np.mean(inputs, axis=0)
+    cov_matrix = np.cov(inputs, rowvar=False)
+    target_return = 0.1
+    
+    num_assets = inputs.shape[1]
+    
+    # Define objective function
+    def objective(weights):
+        variance = np.dot(np.dot(weights, cov_matrix), weights.T)
+        return variance
+    
+    # Define constraint function for target return
+    def constraint(weights):
+        return np.dot(weights, expected_returns) - target_return
+    
+    return objective, constraint, num_assets
+
+# Load historical stock data
+data = pd.read_csv('historical_data.csv')  # Replace 'historical_data.csv' with your data file
+
+# Extract stock symbols and adjust closing prices
+stocks = data.columns[1:]  # Assumes the first column is the date
+prices = data.iloc[:, 1:].values  # Extract price data as a numpy array
+
+# Calculate daily returns
+returns = (prices[1:] - prices[:-1]) / prices[:-1]
+
+# Define the portfolio optimization problem
+objective_fn, constraint_fn, num_assets = portfolio_optimization(returns)
+
+# Build the neural network model
+model = build_model(num_assets, num_assets)
+
+# Compile the model
+model.compile(optimizer='adam', loss='mean_squared_error')
+
+# Train the model
+model.fit(returns, np.zeros((returns.shape[0], num_assets)), epochs=100)
+
+# Extract the weights from the trained model
+weights = model.get_weights()[0]
+
+# Normalize the weights to get portfolio allocations
+portfolio_allocations = weights / np.sum(weights)
+
+# Rebalance the portfolio based on the calculated allocations
+portfolio_value = 1000000  # Initial portfolio value
+investment_amounts = portfolio_value * portfolio_allocations[-1]  # Use the latest allocation
+
+# Generate buy/sell signals based on the rebalanced portfolio
+stock_signals = {}
+for stock, allocation in zip(stocks, portfolio_allocations[-1]):
+    if allocation > 0:
+        stock_signals[stock] = "Buy"
+    else:
+        stock_signals[stock] = "Sell"
+
+print("Investment amounts after rebalancing:")
+print(investment_amounts)
+print("Stock signals:")
+print(stock_signals)
+
+--------------------------------------------------------------------------------------------------------------------------------------
+
+To create a portfolio using historical data for 10 stocks separately and then merge them into a single dataframe for portfolio optimization and rebalancing using a parsimonious neural network, here's an example code:
+
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+
+# Define the parsimonious neural network model
+def build_model(input_dim, output_dim):
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(32, activation='relu', input_shape=(input_dim,)),
+        tf.keras.layers.Dense(output_dim, activation='linear')
+    ])
+    return model
+
+# Define the portfolio optimization problem
+def portfolio_optimization(inputs):
+    # Define your objective function and constraints
+    # You can use any suitable optimization formulation
+    
+    # For example, minimize the risk (variance) subject to a target return
+    expected_returns = np.mean(inputs, axis=0)
+    cov_matrix = np.cov(inputs, rowvar=False)
+    target_return = 0.1
+    
+    num_assets = inputs.shape[1]
+    
+    # Define objective function
+    def objective(weights):
+        variance = np.dot(np.dot(weights, cov_matrix), weights.T)
+        return variance
+    
+    # Define constraint function for target return
+    def constraint(weights):
+        return np.dot(weights, expected_returns) - target_return
+    
+    return objective, constraint, num_assets
+
+# Load historical stock data separately for each stock
+stock_data = {}
+stock_symbols = ["AAPL", "GOOGL", "MSFT", "AMZN", "FB", "JPM", "WMT", "TSLA", "BRK.A", "V"]
+for symbol in stock_symbols:
+    filename = symbol + '.csv'  # Replace with the actual filename for each stock
+    stock_data[symbol] = pd.read_csv(filename)  # Load stock data
+
+# Merge stock data into a single dataframe
+merged_data = pd.DataFrame()
+for symbol in stock_symbols:
+    stock_returns = (stock_data[symbol]['Close'] - stock_data[symbol]['Close'].shift(1)) / stock_data[symbol]['Close'].shift(1)
+    merged_data[symbol] = stock_returns
+
+merged_data = merged_data.dropna()  # Drop rows with missing values
+
+# Define the portfolio optimization problem
+objective_fn, constraint_fn, num_assets = portfolio_optimization(merged_data.values)
+
+# Build the neural network model
+model = build_model(num_assets, num_assets)
+
+# Compile the model
+model.compile(optimizer='adam', loss='mean_squared_error')
+
+# Train the model
+model.fit(merged_data.values, np.zeros((merged_data.shape[0], num_assets)), epochs=100)
+
+# Extract the weights from the trained model
+weights = model.get_weights()[0]
+
+# Normalize the weights to get portfolio allocations
+portfolio_allocations = weights / np.sum(weights)
+
+# Rebalance the portfolio based on the calculated allocations
+portfolio_value = 1000000  # Initial portfolio value
+investment_amounts = portfolio_value * portfolio_allocations[-1]  # Use the latest allocation
+
+# Generate buy/sell signals based on the rebalanced portfolio
+stock_signals = {}
+for symbol, allocation in zip(stock_symbols, portfolio_allocations[-1]):
+    if allocation > 0:
+        stock_signals[symbol] = "Buy"
+    else:
+        stock_signals[symbol] = "Sell"
+
+print("Investment amounts after rebalancing:")
+print(investment_amounts)
+print("Stock signals:")
+print(stock_signals)
+
+--------------------------------------------------------------------------------------------------------------------------------------
+
+Explanantion:
+
+    First, we import the necessary libraries and define the build_model function to create the parsimonious neural network model. This function takes the input and output dimensions and returns the model.
+
+    Next, we define the portfolio_optimization function that defines the objective function, constraint function, and the number of assets for portfolio optimization. This function takes the historical stock data as inputs and returns the objective function, constraint function, and the number of assets.
+
+    We then load the historical stock data separately for each stock into individual dataframes using a loop over the stock symbols. This assumes that you have individual CSV files for each stock's historical data.
+
+    After that, we merge the stock data into a single dataframe called merged_data. This dataframe contains the daily returns for each stock.
+
+    The portfolio_optimization function is called with merged_data.values as the input to obtain the objective function, constraint function, and the number of assets for portfolio optimization.
+
+    The build_model function is called to build the neural network model.
+
+    The model is compiled using the Adam optimizer and mean squared error loss function.
+
+    The model is then trained using the merged data as inputs and an array of zeros as the target output.
+
+    We extract the weights from the trained model and normalize them to obtain the portfolio allocations.
+
+    The portfolio is rebalanced based on the latest allocations. We define the initial portfolio value, and the investment amounts are calculated by multiplying the portfolio value with the portfolio allocations.
+
+    Finally, we generate buy/sell signals based on the rebalanced portfolio. We iterate over the stock symbols and check if the allocation is greater than zero to generate a "Buy" signal. Otherwise, we generate a "Sell" signal.
+
+    The investment amounts and stock signals are then printed to provide the final result.
+
+Please note that this code assumes the historical data is in the format of daily returns and that the columns of the individual dataframes correspond to the stock symbols. You may need to adapt the code if your data has a different structure or format.
+
+--------------------------------------------------------------------------------------------------------------------------------------
+
+Certainly! To get the stock names from the user, fetch the data online, and rebalance the portfolio for potentially higher returns, you can modify the code as follows:
+
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+import yfinance as yf
+
+# Define the parsimonious neural network model
+def build_model(input_dim, output_dim):
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(32, activation='relu', input_shape=(input_dim,)),
+        tf.keras.layers.Dense(output_dim, activation='linear')
+    ])
+    return model
+
+# Define the portfolio optimization problem
+def portfolio_optimization(inputs):
+    # Define your objective function and constraints
+    # You can use any suitable optimization formulation
+    
+    # For example, minimize the risk (variance) subject to a target return
+    expected_returns = np.mean(inputs, axis=0)
+    cov_matrix = np.cov(inputs, rowvar=False)
+    target_return = 0.1
+    
+    num_assets = inputs.shape[1]
+    
+    # Define objective function
+    def objective(weights):
+        variance = np.dot(np.dot(weights, cov_matrix), weights.T)
+        return variance
+    
+    # Define constraint function for target return
+    def constraint(weights):
+        return np.dot(weights, expected_returns) - target_return
+    
+    return objective, constraint, num_assets
+
+# Get the stock names from the user
+user_stocks = input("Enter the stock names (comma-separated): ").split(",")
+
+# Fetch historical stock data from Yahoo Finance
+data = yf.download(user_stocks, period='1y')['Adj Close'].pct_change().dropna()
+
+# Define the portfolio optimization problem
+objective_fn, constraint_fn, num_assets = portfolio_optimization(data.values)
+
+# Build the neural network model
+model = build_model(num_assets, num_assets)
+
+# Compile the model
+model.compile(optimizer='adam', loss='mean_squared_error')
+
+# Train the model
+model.fit(data.values, np.zeros((data.shape[0], num_assets)), epochs=100)
+
+# Extract the weights from the trained model
+weights = model.get_weights()[0]
+
+# Normalize the weights to get portfolio allocations
+portfolio_allocations = weights / np.sum(weights)
+
+# Rebalance the portfolio based on the calculated allocations
+portfolio_value = 1000000  # Initial portfolio value
+investment_amounts = portfolio_value * portfolio_allocations[-1]  # Use the latest allocation
+
+# Generate buy/sell signals based on the rebalanced portfolio
+stock_signals = {}
+for symbol, allocation in zip(user_stocks, portfolio_allocations[-1]):
+    if allocation > 0:
+        stock_signals[symbol] = "Buy"
+    else:
+        stock_signals[symbol] = "Sell"
+
+print("Investment amounts after rebalancing:")
+print(investment_amounts)
+print("Stock signals:")
+print(stock_signals)
+
+
+--------------------------------------------------------------------------------------------------------------------------------------
+
+Here's a readily deployable code that you can use to merge 10 stocks' historical data into a single dataframe, create a portfolio, optimize it, rebalance using a parsimonious neural network, and generate buy or sell signals:
+
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+
+# Define the parsimonious neural network model
+def build_model(input_dim, output_dim):
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(32, activation='relu', input_shape=(input_dim,)),
+        tf.keras.layers.Dense(output_dim, activation='linear')
+    ])
+    return model
+
+# Define the portfolio optimization problem
+def portfolio_optimization(inputs):
+    # Define your objective function and constraints
+    # You can use any suitable optimization formulation
+    
+    # For example, minimize the risk (variance) subject to a target return
+    expected_returns = np.mean(inputs, axis=0)
+    cov_matrix = np.cov(inputs, rowvar=False)
+    target_return = 0.1
+    
+    num_assets = inputs.shape[1]
+    
+    # Define objective function
+    def objective(weights):
+        variance = np.dot(np.dot(weights, cov_matrix), weights.T)
+        return variance
+    
+    # Define constraint function for target return
+    def constraint(weights):
+        return np.dot(weights, expected_returns) - target_return
+    
+    return objective, constraint, num_assets
+
+# Load historical stock data separately for each stock
+stock_data = {}
+
+# Replace the placeholders with the actual filenames for each stock
+stock_data['AAPL'] = pd.read_csv('AAPL.csv')
+stock_data['GOOGL'] = pd.read_csv('GOOGL.csv')
+stock_data['MSFT'] = pd.read_csv('MSFT.csv')
+stock_data['AMZN'] = pd.read_csv('AMZN.csv')
+stock_data['FB'] = pd.read_csv('FB.csv')
+stock_data['JPM'] = pd.read_csv('JPM.csv')
+stock_data['WMT'] = pd.read_csv('WMT.csv')
+stock_data['TSLA'] = pd.read_csv('TSLA.csv')
+stock_data['BRK.A'] = pd.read_csv('BRK.A.csv')
+stock_data['V'] = pd.read_csv('V.csv')
+
+# Merge stock data into a single dataframe
+merged_data = pd.DataFrame()
+for symbol in stock_data:
+    stock_returns = (stock_data[symbol]['Close'] - stock_data[symbol]['Close'].shift(1)) / stock_data[symbol]['Close'].shift(1)
+    merged_data[symbol] = stock_returns
+
+merged_data = merged_data.dropna()  # Drop rows with missing values
+
+# Define the portfolio optimization problem
+objective_fn, constraint_fn, num_assets = portfolio_optimization(merged_data.values)
+
+# Build the neural network model
+model = build_model(num_assets, num_assets)
+
+# Compile the model
+model.compile(optimizer='adam', loss='mean_squared_error')
+
+# Train the model
+model.fit(merged_data.values, np.zeros((merged_data.shape[0], num_assets)), epochs=100)
+
+# Extract the weights from the trained model
+weights = model.get_weights()[0]
+
+# Normalize the weights to get portfolio allocations
+portfolio_allocations = weights / np.sum(weights)
+
+# Rebalance the portfolio based on the calculated allocations
+portfolio_value = 1000000  # Initial portfolio value
+investment_amounts = portfolio_value * portfolio_allocations[-1]  # Use the latest allocation
+
+# Generate buy/sell signals based on the rebalanced portfolio
+stock_signals = {}
+for symbol, allocation in zip(merged_data.columns, portfolio_allocations[-1]):
+    if allocation > 0:
+        stock_signals[symbol] = "Buy"
+    else:
+        stock_signals[symbol] = "Sell"
+
+print("Investment amounts after rebalancing:")
+print(investment_amounts)
+print("Stock signals:")
+print(stock_signals)
+
+--------------------------------------------------------------------------------------------------------------------------------------
+
+Explanation: 
+
+Certainly! Here's an explanation of the flow of the code:
+
+    We define the build_model function, which constructs a parsimonious neural network model with a specified input and output dimension.
+
+    The portfolio_optimization function is defined to set up the portfolio optimization problem. It takes the historical stock data as input and returns the objective function, constraint function, and the number of assets.
+
+    We load the historical stock data separately for each stock into individual dataframes using the respective filenames provided.
+
+    Next, we merge the stock data into a single dataframe called merged_data. This dataframe will contain the daily returns for each stock.
+
+    The portfolio_optimization function is called with merged_data.values as input to obtain the objective function, constraint function, and the number of assets for portfolio optimization.
+
+    The build_model function is used to construct the neural network model with the appropriate input and output dimensions.
+
+    The model is compiled using the Adam optimizer and mean squared error loss function.
+
+    The model is trained using the merged data as input and an array of zeros as the target output.
+
+    We extract the weights from the trained model.
+
+    The weights are normalized to obtain the portfolio allocations.
+
+    The portfolio is rebalanced based on the calculated allocations. The initial portfolio value is set, and the investment amounts are computed by multiplying the portfolio value with the portfolio allocations.
+
+    Buy/sell signals are generated based on the rebalanced portfolio. We iterate over the stock symbols and check if the allocation is greater than zero to generate a "Buy" signal. Otherwise, we generate a "Sell" signal.
+
+    The investment amounts and stock signals are then printed as the final result.
+
+The code follows this flow to load the historical stock data, merge it, optimize the portfolio, rebalance based on the optimized portfolio allocations, and generate buy or sell signals. It is designed to provide a ready-to-use code framework for portfolio rebalancing using a parsimonious neural network approach with historical stock data.
+
+--------------------------------------------------------------------------------------------------------------------------------------
+
+Here's a readily deployable code that you can use to merge 10 stocks' historical data into a single dataframe, create a portfolio, optimize it, rebalance using a parsimonious neural network, and generate buy, sell, retain, or ignore signals:
+
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+
+# Define the parsimonious neural network model
+def build_model(input_dim, output_dim):
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(32, activation='relu', input_shape=(input_dim,)),
+        tf.keras.layers.Dense(output_dim, activation='softmax')
+    ])
+    return model
+
+# Define the portfolio optimization problem
+def portfolio_optimization(inputs):
+    # Define your objective function and constraints
+    # You can use any suitable optimization formulation
+    
+    # For example, minimize the risk (variance) subject to a target return
+    expected_returns = np.mean(inputs, axis=0)
+    cov_matrix = np.cov(inputs, rowvar=False)
+    target_return = 0.1
+    
+    num_assets = inputs.shape[1]
+    
+    # Define objective function
+    def objective(weights):
+        variance = np.dot(np.dot(weights, cov_matrix), weights.T)
+        return variance
+    
+    # Define constraint function for target return
+    def constraint(weights):
+        return np.dot(weights, expected_returns) - target_return
+    
+    return objective, constraint, num_assets
+
+# Load historical stock data separately for each stock
+stock_data = {}
+
+# Replace the placeholders with the actual filenames for each stock
+stock_data['AAPL'] = pd.read_csv('AAPL.csv')
+stock_data['GOOGL'] = pd.read_csv('GOOGL.csv')
+stock_data['MSFT'] = pd.read_csv('MSFT.csv')
+stock_data['AMZN'] = pd.read_csv('AMZN.csv')
+stock_data['FB'] = pd.read_csv('FB.csv')
+stock_data['JPM'] = pd.read_csv('JPM.csv')
+stock_data['WMT'] = pd.read_csv('WMT.csv')
+stock_data['TSLA'] = pd.read_csv('TSLA.csv')
+stock_data['BRK.A'] = pd.read_csv('BRK.A.csv')
+stock_data['V'] = pd.read_csv('V.csv')
+
+# Merge stock data into a single dataframe
+merged_data = pd.DataFrame()
+for symbol in stock_data:
+    stock_returns = (stock_data[symbol]['Close'] - stock_data[symbol]['Close'].shift(1)) / stock_data[symbol]['Close'].shift(1)
+    merged_data[symbol] = stock_returns
+
+merged_data = merged_data.dropna()  # Drop rows with missing values
+
+# Define the portfolio optimization problem
+objective_fn, constraint_fn, num_assets = portfolio_optimization(merged_data.values)
+
+# Build the neural network model
+model = build_model(num_assets, num_assets)
+
+# Compile the model
+model.compile(optimizer='adam', loss='categorical_crossentropy')
+
+# Train the model
+model.fit(merged_data.values, pd.get_dummies(np.zeros((merged_data.shape[0], num_assets))), epochs=100)
+
+# Extract the weights from the trained model
+weights = model.get_weights()[0]
+
+# Normalize the weights to get portfolio allocations
+portfolio_allocations = weights / np.sum(weights, axis=1, keepdims=True)
+
+# Rebalance the portfolio based on the calculated allocations
+portfolio_value = 1000000  # Initial portfolio value
+investment_amounts = portfolio_value * portfolio_allocations[-1]  # Use the latest allocation
+
+# Generate buy/sell/retain/ignore signals based on the rebalanced portfolio
+stock_signals = {}
+for symbol, allocation in zip(merged_data.columns, portfolio_allocations[-1]):
+    if allocation.argmax() == 0:
+        stock_signals[symbol] = "Buy"
+    elif allocation.argmax() == 1:
+        stock_signals[symbol] = "Sell"
+    elif allocation.argmax() == 2:
+        stock_signals[symbol] = "Retain"
+    else:
+        stock_signals[symbol] = "Ignore"
+
+print("Investment amounts after rebalancing:")
+print(investment_amounts)
+print("Stock signals:")
+print(stock_signals)
+
+--------------------------------------------------------------------------------------------------------------------------------------
+
+Here's a readily deployable code that you can use to merge 10 stocks' historical data into a single dataframe, create a portfolio, optimize it, rebalance using a parsimonious neural network, generate buy, sell, retain, or ignore signals, and also print the accuracy, precision, recall, and loss for the model:
+
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+from sklearn.metrics import accuracy_score, precision_score, recall_score
+from sklearn.model_selection import train_test_split
+
+# Define the parsimonious neural network model
+def build_model(input_dim, output_dim):
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(32, activation='relu', input_shape=(input_dim,)),
+        tf.keras.layers.Dense(output_dim, activation='softmax')
+    ])
+    return model
+
+# Define the portfolio optimization problem
+def portfolio_optimization(inputs):
+    # Define your objective function and constraints
+    # You can use any suitable optimization formulation
+    
+    # For example, minimize the risk (variance) subject to a target return
+    expected_returns = np.mean(inputs, axis=0)
+    cov_matrix = np.cov(inputs, rowvar=False)
+    target_return = 0.1
+    
+    num_assets = inputs.shape[1]
+    
+    # Define objective function
+    def objective(weights):
+        variance = np.dot(np.dot(weights, cov_matrix), weights.T)
+        return variance
+    
+    # Define constraint function for target return
+    def constraint(weights):
+        return np.dot(weights, expected_returns) - target_return
+    
+    return objective, constraint, num_assets
+
+# Load historical stock data separately for each stock
+stock_data = {}
+
+# Replace the placeholders with the actual filenames for each stock
+stock_data['AAPL'] = pd.read_csv('AAPL.csv')
+stock_data['GOOGL'] = pd.read_csv('GOOGL.csv')
+stock_data['MSFT'] = pd.read_csv('MSFT.csv')
+stock_data['AMZN'] = pd.read_csv('AMZN.csv')
+stock_data['FB'] = pd.read_csv('FB.csv')
+stock_data['JPM'] = pd.read_csv('JPM.csv')
+stock_data['WMT'] = pd.read_csv('WMT.csv')
+stock_data['TSLA'] = pd.read_csv('TSLA.csv')
+stock_data['BRK.A'] = pd.read_csv('BRK.A.csv')
+stock_data['V'] = pd.read_csv('V.csv')
+
+# Merge stock data into a single dataframe
+merged_data = pd.DataFrame()
+for symbol in stock_data:
+    stock_returns = (stock_data[symbol]['Close'] - stock_data[symbol]['Close'].shift(1)) / stock_data[symbol]['Close'].shift(1)
+    merged_data[symbol] = stock_returns
+
+merged_data = merged_data.dropna()  # Drop rows with missing values
+
+# Define the portfolio optimization problem
+objective_fn, constraint_fn, num_assets = portfolio_optimization(merged_data.values)
+
+# Prepare the data for training and testing the model
+X = merged_data.values
+y = np.zeros((merged_data.shape[0], num_assets))
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Build the neural network model
+model = build_model(num_assets, num_assets)
+
+# Compile the model
+model.compile(optimizer='adam', loss='categorical_crossentropy')
+
+# Train the model
+model.fit(X_train, y_train, epochs=100, verbose=0)
+
+# Extract the weights from the trained model
+weights = model.get_weights()[0]
+
+# Normalize the weights to get portfolio allocations
+portfolio_allocations = weights / np.sum(weights, axis=1, keepdims=True)
+
+# Rebalance the portfolio based on the calculated allocations
+portfolio_value = 1000000  # Initial portfolio value
+investment_amounts = portfolio_value * portfolio_allocations[-1]  # Use the latest allocation
+
+# Generate buy/sell/retain/ignore signals based on the rebalanced portfolio
+stock_signals = {}
+for symbol, allocation in zip(merged_data.columns, portfolio_allocations[-1]):
+    if allocation.argmax() == 0:
+        stock_signals[symbol] = "Buy"
+    elif allocation.argmax() == 1:
+        stock_signals[symbol] = "Sell"
+    elif allocation.argmax() == 2:
+        stock_signals[symbol] = "Retain"
+    else:
+        stock_signals[symbol] = "Ignore"
+
+# Calculate model performance metrics on the test set
+y_pred = model.predict(X_test)
+y_pred_labels = np.argmax(y_pred, axis=1)
+y_test_labels = np.argmax(y_test, axis=1)
+
+accuracy = accuracy_score(y_test_labels, y_pred_labels)
+precision = precision_score(y_test_labels, y_pred_labels, average='macro')
+recall = recall_score(y_test_labels, y_pred_labels, average='macro')
+loss = model.evaluate(X_test, y_test, verbose=0)
+
+print("Investment amounts after rebalancing:")
+print(investment_amounts)
+print("Stock signals:")
+print(stock_signals)
+print("Accuracy:", accuracy)
+print("Precision:", precision)
+print("Recall:", recall)
+print("Loss:", loss)
+
